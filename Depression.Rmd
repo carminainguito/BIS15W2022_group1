@@ -1,0 +1,29 @@
+---
+title: "Depression"
+author: "Shuyi Bian"
+date: "2/10/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load the libraries
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(RColorBrewer)
+library(paletteer)
+library(janitor)
+library(here)
+library(ggthemes)
+```
+
+```{r}
+options(scipen=999) #cancels the use of scientific notation for the session
+```
+
+```{r}
+depression <- readr::read_csv("b_depressed.csv")
+```
+
