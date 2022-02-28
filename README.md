@@ -7,6 +7,6 @@ The dataset we are using consists as a study about the life conditions of people
 [Shuyi Bian](sbian@ucdavis.edu) <br /> 
 [Carmina Inguito](cdinguito@ucdavis.edu) <br />
 ## Repository Link
-[Repository](https://github.com/carminainguito/BIS15W2022_group1)
+[Group Project Repository](https://github.com/carminainguito/BIS15W2022_group1)
 ## Thank you!
 Please leave a star if you find this useful!
