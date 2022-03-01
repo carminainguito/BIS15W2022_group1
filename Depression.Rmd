@@ -1,6 +1,6 @@
 ---
 title: "Depression"
-author: "Shuyi Bian"
+author: "Shuyi Bian, Carmina, Yutong"
 date: "2/10/2022"
 output: html_document
 ---
