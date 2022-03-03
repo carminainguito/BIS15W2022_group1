@@ -1,8 +1,11 @@
 ---
 title: "Depression"
 author: "Shuyi Bian, Carmina Inguito, Yutong Ji"
-date: "2/10/2022"
-output: html_document
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    theme: spacelab
+    keep_md: yes
 ---
 
 ```{r setup, include=FALSE}
