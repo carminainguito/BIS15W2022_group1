@@ -1,0 +1,44 @@
+---
+title: "Happiness"
+author: "Shuyi Bian, Carmina Inguito, Yutong Ji"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    theme: spacelab
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load the libraries
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(RColorBrewer)
+library(paletteer)
+library(janitor)
+library(here)
+library(ggthemes)
+library(shiny)
+library(shinydashboard)
+```
+
+```{r}
+options(scipen=999) #cancels the use of scientific notation for the session
+```
+
+## Import Data
+```{r}
+happiness_2015 <- readr::read_csv("data/2015.csv")%>% 
+  clean_names()
+happiness_2016 <- readr::read_csv("data/2016.csv")%>% 
+  clean_names()
+happiness_2017 <- readr::read_csv("data/2017.csv")%>% 
+  clean_names()
+happiness_2018 <- readr::read_csv("data/2018.csv")%>% 
+  clean_names()
+happiness_2019 <- readr::read_csv("data/2019.csv")%>% 
+  clean_names()
+```
+
