@@ -1,7 +1,7 @@
 ---
 title: "Happiness"
 author: "Shuyi Bian, Carmina Inguito, Yutong Ji"
-date: "`r Sys.Date()`"
+date: "`2022-03-03`"
 output:
   html_document: 
     theme: spacelab
@@ -11,6 +11,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+## Introduction 
 
 ## Load the libraries
 ```{r message=FALSE, warning=FALSE}
@@ -28,7 +29,7 @@ library(shinydashboard)
 options(scipen=999) #cancels the use of scientific notation for the session
 ```
 
-## Import Data
+## Import and Clean Happiness Data
 ```{r}
 happiness_2015 <- readr::read_csv("data/2015.csv")%>% 
   clean_names()
@@ -42,3 +43,12 @@ happiness_2019 <- readr::read_csv("data/2019.csv")%>%
   clean_names()
 ```
 
+## Exploring Happiness Data 
+**Here, we're interested in understanding what kind of data we're going to be working with by utilizing several functions to observer its structure.**
+```{r}
+summary(happiness_2016)
+```
+
+##Visualization 
+
+##Research Questions for Analysis 
