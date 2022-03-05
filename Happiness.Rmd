@@ -6,6 +6,7 @@ output:
   html_document: 
     theme: spacelab
     keep_md: yes
+runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -29,6 +30,7 @@ library(shinydashboard)
 options(scipen=999) #cancels the use of scientific notation for the session
 ```
 
+
 ## Laod and Clean the Data
 ```{r}
 happiness_2015 <- readr::read_csv("data/2015.csv")%>% 
@@ -49,11 +51,9 @@ happiness_2019 <- readr::read_csv("data/2019.csv")%>%
 summary(happiness_2016)
 ```
 
-```{r}
-glimpse()
-```
 
 ## Merging Data Frames
+**Add year**
 ```{r}
 # Add year
 happiness_2015_join <- happiness_2015 %>% 
@@ -68,6 +68,7 @@ happiness_2019_join <- happiness_2019 %>%
   mutate(year = case_when(country_or_region != "NA" ~ "2019"))
 ```
 
+**Change column names**
 ```{r}
 #Change Column names
 happiness_2015_join <- happiness_2015_join %>% 
@@ -98,6 +99,7 @@ happiness_2019_join <- happiness_2019_join %>%
          trust_government_corruption = perceptions_of_corruption)
 ```
 
+**Merge data frames together**
 ```{r}
 #merge data frames together
 #thank you Joel
@@ -109,10 +111,114 @@ complete_happiness <- complete_happiness %>%
   select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns
 ```
 
+## Happiness Contributors' Change 2015 - 2019
+```{r}
+#happiness factors change from 2015-2019
+library(shiny)
+
+complete_happiness$year <- as.character(complete_happiness$year)
+
+ui <- dashboardPage(
+  dashboardHeader(title = "Happiness"),
+  dashboardSidebar(disable = T),
+  dashboardBody(
+  fluidRow(
+  box(title = "Plot Options", width = 3,
+  selectInput("factor", "Select Happiness Factors", choices = c("economy_gdp_per_capita", "family", "health_life_expectancy", "freedom", "trust_government_corruption"), 
+              selected = "economy_gdp_per_capita"),
+  helpText("Factors' values reflect the extent to which a factor contributes to the calculation of the Happiness Score")),
+  
+  box(title = "Plot of Happiness Factors Data", width = 7,
+  plotOutput("plot", width = "600px", height = "500px")))))
+
+server <- function(input, output, session) { 
+  output$plot <- renderPlot({
+  complete_happiness %>%
+      group_by(year) %>% 
+      summarize(mean_factor_value = mean(get(input$factor), na.rm=TRUE)) %>% 
+      ggplot(aes_string(x="year", y="mean_factor_value", fill="year"))+
+      geom_col()+
+      geom_text(aes(label = round(mean_factor_value, 2)),
+                position = position_dodge(width = 0.9),
+                vjust = -0.5,
+                color = "black",
+                size = 5)+
+      theme_linedraw()+
+      scale_fill_brewer(palette = "Pastel1")+
+      labs(x=NULL,
+           y="mean factor value")+
+      theme(axis.text.x = element_text(size = 15),
+            axis.text.y = element_text(size = 15),
+            axis.title.y = element_text(size = 18))
+
+  })
+  session$onSessionEnded(stopApp)
+  }
+
+shinyApp(ui, server)
+```
+
+## Relationship between Happiness Contributor and Happiness Score 2015 - 2019
+```{r}
+#happiness factors change from 2015-2019
+library(shiny)
+
+complete_happiness$year <- as.numeric(complete_happiness$year)
+
+ui <- dashboardPage(
+  dashboardHeader(title = "Happiness"),
+  dashboardSidebar(disable = T),
+  dashboardBody(
+  fluidRow(
+  box(title = "Plot Options", width = 3,
+  selectInput("factor", "Select Happiness Factors", choices = c("economy_gdp_per_capita", "family", "health_life_expectancy", "freedom", "trust_government_corruption"), 
+              selected = "economy_gdp_per_capita"),
+  sliderInput("year",
+              "Year:",
+              min = 2015,
+              max = 2019,
+              value = 2015,
+              step = 1),
+  
+  helpText("Factors' values reflect the extent to which a factor contributes to the calculation of the Happiness Score")),
+  
+  box(title = "Plot of Happiness Factors Data", width = 7,
+  plotOutput("plot", width = "600px", height = "500px")))))
+
+server <- function(input, output, session) { 
+  output$plot <- renderPlot({
+    complete_happiness %>% 
+      filter(year==input$year) %>% 
+      ggplot(aes_string(x=input$factor, y="happiness_score"))+
+      geom_point(size = 4, alpha = 0.5)+
+      geom_smooth(method=lm, se=T)+
+      labs(y="Happiness Score")+
+      theme_linedraw()+
+      scale_color_brewer(palette = "Pastel1")+
+      labs(x="factor value",
+           y="happiness score")+
+      theme(axis.text.x = element_text(size = 15),
+            axis.text.y = element_text(size = 15),
+            axis.title.y = element_text(size = 18),
+            axis.title.x = element_text(size = 18))
+      
+    
+  })
+  session$onSessionEnded(stopApp)
+}
+
+shinyApp(ui, server)
+```
+
+
 ## Data Visualization
 ```{r}
 names(complete_happiness)
 ```
 ##Anlysis
+```{r}
+getwd()
+```
+
 
 ##Research Questions for Analysis 

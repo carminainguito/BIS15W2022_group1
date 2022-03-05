@@ -385,11 +385,14 @@ pre code {
 
 <h1 class="title toc-ignore">Happiness</h1>
 <h4 class="author">Shuyi Bian, Carmina Inguito, Yutong Ji</h4>
-<h4 class="date">2022-03-03</h4>
+<h4 class="date"><code>2022-03-03</code></h4>
 
 </div>
 
 
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+</div>
 <div id="load-the-libraries" class="section level2">
 <h2>Load the libraries</h2>
 <pre class="r"><code>library(tidyverse)
@@ -402,8 +405,8 @@ library(shiny)
 library(shinydashboard)</code></pre>
 <pre class="r"><code>options(scipen=999) #cancels the use of scientific notation for the session</code></pre>
 </div>
-<div id="import-data" class="section level2">
-<h2>Import Data</h2>
+<div id="laod-and-clean-the-data" class="section level2">
+<h2>Laod and Clean the Data</h2>
 <pre class="r"><code>happiness_2015 &lt;- readr::read_csv(&quot;data/2015.csv&quot;)%&gt;% 
   clean_names()</code></pre>
 <pre><code>## Rows: 158 Columns: 12
@@ -455,8 +458,43 @@ library(shinydashboard)</code></pre>
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 </div>
-<div id="making-joining-files" class="section level2">
-<h2>Making Joining Files</h2>
+<div id="exploring-the-data" class="section level2">
+<h2>Exploring the Data</h2>
+<p><strong>Here, we’re interested in understanding what kind of data
+we’re going to be working with by utilizing several functions to
+observer its structure.</strong></p>
+<pre class="r"><code>summary(happiness_2016)</code></pre>
+<pre><code>##    country             region          happiness_rank   happiness_score
+##  Length:157         Length:157         Min.   :  1.00   Min.   :2.905  
+##  Class :character   Class :character   1st Qu.: 40.00   1st Qu.:4.404  
+##  Mode  :character   Mode  :character   Median : 79.00   Median :5.314  
+##                                        Mean   : 78.98   Mean   :5.382  
+##                                        3rd Qu.:118.00   3rd Qu.:6.269  
+##                                        Max.   :157.00   Max.   :7.526  
+##  lower_confidence_interval upper_confidence_interval economy_gdp_per_capita
+##  Min.   :2.732             Min.   :3.078             Min.   :0.0000        
+##  1st Qu.:4.327             1st Qu.:4.465             1st Qu.:0.6702        
+##  Median :5.237             Median :5.419             Median :1.0278        
+##  Mean   :5.282             Mean   :5.482             Mean   :0.9539        
+##  3rd Qu.:6.154             3rd Qu.:6.434             3rd Qu.:1.2796        
+##  Max.   :7.460             Max.   :7.669             Max.   :1.8243        
+##      family       health_life_expectancy    freedom      
+##  Min.   :0.0000   Min.   :0.0000         Min.   :0.0000  
+##  1st Qu.:0.6418   1st Qu.:0.3829         1st Qu.:0.2575  
+##  Median :0.8414   Median :0.5966         Median :0.3975  
+##  Mean   :0.7936   Mean   :0.5576         Mean   :0.3710  
+##  3rd Qu.:1.0215   3rd Qu.:0.7299         3rd Qu.:0.4845  
+##  Max.   :1.1833   Max.   :0.9528         Max.   :0.6085  
+##  trust_government_corruption   generosity     dystopia_residual
+##  Min.   :0.00000             Min.   :0.0000   Min.   :0.8179   
+##  1st Qu.:0.06126             1st Qu.:0.1546   1st Qu.:2.0317   
+##  Median :0.10547             Median :0.2225   Median :2.2907   
+##  Mean   :0.13762             Mean   :0.2426   Mean   :2.3258   
+##  3rd Qu.:0.17554             3rd Qu.:0.3119   3rd Qu.:2.6646   
+##  Max.   :0.50521             Max.   :0.8197   Max.   :3.8377</code></pre>
+</div>
+<div id="merging-data-frames" class="section level2">
+<h2>Merging Data Frames</h2>
 <pre class="r"><code># Add year
 happiness_2015_join &lt;- happiness_2015 %&gt;% 
   mutate(year = case_when(country != &quot;NA&quot; ~ &quot;2015&quot;))
@@ -495,13 +533,121 @@ happiness_2019_join &lt;- happiness_2019_join %&gt;%
          health_life_expectancy = healthy_life_expectancy,
          freedom = freedom_to_make_life_choices,
          trust_government_corruption = perceptions_of_corruption)</code></pre>
-<p>Here is my way to do dataframe merge</p>
-<pre class="r"><code>#drop unrelated column (test)
-happiness_2015_join &lt;- subset(happiness_2015_join, select = -c(region, standard_error, dystopia_residual))
+<pre class="r"><code>#merge data frames together
+#thank you Joel
+happiness_2018_join$trust_government_corruption &lt;- as.numeric(happiness_2018_join$trust_government_corruption)</code></pre>
+<pre><code>## Warning: NAs introduced by coercion</code></pre>
+<pre class="r"><code>complete_happiness &lt;- bind_rows(happiness_2015_join, happiness_2016_join, happiness_2017_join, happiness_2018_join, happiness_2019_join) #bind the data frames
 
-happiness_2016_join &lt;- subset(happiness_2016_join, select = -c(region, lower_confidence_interval, upper_confidence_interval, dystopia_residual))</code></pre>
-<pre class="r"><code>#merge files (test)
-test_merge &lt;- rbind(happiness_2015_join, happiness_2016_join)</code></pre>
+complete_happiness &lt;- complete_happiness %&gt;% 
+  select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns</code></pre>
+</div>
+<div id="section" class="section level2">
+<h2></h2>
+<pre class="r"><code>#happiness factors change from 2015-2019
+library(shiny)
+
+complete_happiness$year &lt;- as.character(complete_happiness$year)
+
+ui &lt;- dashboardPage(
+  dashboardHeader(title = &quot;Happiness&quot;),
+  dashboardSidebar(disable = T),
+  dashboardBody(
+  fluidRow(
+  box(title = &quot;Plot Options&quot;, width = 3,
+  selectInput(&quot;factor&quot;, &quot;Select Happiness Factors&quot;, choices = c(&quot;economy_gdp_per_capita&quot;, &quot;family&quot;, &quot;health_life_expectancy&quot;, &quot;freedom&quot;, &quot;trust_government_corruption&quot;), 
+              selected = &quot;economy_gdp_per_capita&quot;),
+  helpText(&quot;Factors&#39; values reflect the extent to which a factor contributes to the calculation of the Happiness Score&quot;)),
+  
+  box(title = &quot;Plot of Happiness Factors Data&quot;, width = 7,
+  plotOutput(&quot;plot&quot;, width = &quot;600px&quot;, height = &quot;500px&quot;)))))
+
+server &lt;- function(input, output, session) { 
+  output$plot &lt;- renderPlot({
+  complete_happiness %&gt;%
+      group_by(year) %&gt;% 
+      summarize(mean_factor_value = mean(get(input$factor), na.rm=TRUE)) %&gt;% 
+      ggplot(aes_string(x=&quot;year&quot;, y=&quot;mean_factor_value&quot;, fill=&quot;year&quot;))+
+      geom_col()+
+      geom_text(aes(label = round(mean_factor_value, 2)),
+                position = position_dodge(width = 0.9),
+                vjust = -0.5,
+                color = &quot;black&quot;,
+                size = 5)+
+      theme_linedraw()+
+      scale_fill_brewer(palette = &quot;Pastel1&quot;)+
+      labs(x=NULL,
+           y=&quot;mean factor value&quot;)+
+      theme(axis.text.x = element_text(size = 15),
+            axis.text.y = element_text(size = 15),
+            axis.title.y = element_text(size = 18))
+
+  })
+  session$onSessionEnded(stopApp)
+  }
+
+shinyApp(ui, server)</code></pre>
+<p><div style="width: 100% ; height: 400px ; text-align: center; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;" class="muted well">Shiny applications not supported in static R Markdown documents</div></p>
+<pre class="r"><code>#happiness factors change from 2015-2019
+library(shiny)
+
+complete_happiness$year &lt;- as.numeric(complete_happiness$year)
+
+ui &lt;- dashboardPage(
+  dashboardHeader(title = &quot;Happiness&quot;),
+  dashboardSidebar(disable = T),
+  dashboardBody(
+  fluidRow(
+  box(title = &quot;Plot Options&quot;, width = 3,
+  selectInput(&quot;factor&quot;, &quot;Select Happiness Factors&quot;, choices = c(&quot;economy_gdp_per_capita&quot;, &quot;family&quot;, &quot;health_life_expectancy&quot;, &quot;freedom&quot;, &quot;trust_government_corruption&quot;), 
+              selected = &quot;economy_gdp_per_capita&quot;),
+  sliderInput(&quot;year&quot;,
+              &quot;Year:&quot;,
+              min = 2015,
+              max = 2019,
+              value = 2015,
+              step = 1),
+  
+  helpText(&quot;Factors&#39; values reflect the extent to which a factor contributes to the calculation of the Happiness Score&quot;)),
+  
+  box(title = &quot;Plot of Happiness Factors Data&quot;, width = 7,
+  plotOutput(&quot;plot&quot;, width = &quot;600px&quot;, height = &quot;500px&quot;)))))
+
+server &lt;- function(input, output, session) { 
+  output$plot &lt;- renderPlot({
+    complete_happiness %&gt;% 
+      filter(year==input$year) %&gt;% 
+      ggplot(aes_string(x=input$factor, y=&quot;happiness_score&quot;))+
+      geom_point(size = 4, alpha = 0.5)+
+      geom_smooth(method=lm, se=T)+
+      labs(y=&quot;Happiness Score&quot;)+
+      theme_linedraw()+
+      scale_color_brewer(palette = &quot;Pastel1&quot;)+
+      labs(x=&quot;factor value&quot;,
+           y=&quot;happiness score&quot;)+
+      theme(axis.text.x = element_text(size = 15),
+            axis.text.y = element_text(size = 15),
+            axis.title.y = element_text(size = 18),
+            axis.title.x = element_text(size = 18))
+      
+    
+  })
+  session$onSessionEnded(stopApp)
+}
+
+shinyApp(ui, server)</code></pre>
+<p><div style="width: 100% ; height: 400px ; text-align: center; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;" class="muted well">Shiny applications not supported in static R Markdown documents</div></p>
+</div>
+<div id="data-visualization" class="section level2">
+<h2>Data Visualization</h2>
+<pre class="r"><code>names(complete_happiness)</code></pre>
+<pre><code>##  [1] &quot;country_or_region&quot;           &quot;happiness_rank&quot;             
+##  [3] &quot;happiness_score&quot;             &quot;economy_gdp_per_capita&quot;     
+##  [5] &quot;family&quot;                      &quot;health_life_expectancy&quot;     
+##  [7] &quot;freedom&quot;                     &quot;trust_government_corruption&quot;
+##  [9] &quot;generosity&quot;                  &quot;year&quot;</code></pre>
+<p>##Anlysis</p>
+<p>##Research Questions for Analysis</p>
 </div>
 
 
