@@ -6,7 +6,6 @@ output:
   html_document: 
     theme: spacelab
     keep_md: yes
-runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -123,107 +122,6 @@ glimpse(complete_happiness)
 complete_happiness %>%
   naniar::miss_var_summary()
 ```
-
-## Happiness Contributors' Change 2015 - 2019
-```{r}
-#happiness factors change from 2015-2019
-library(shiny)
-
-complete_happiness$year <- as.character(complete_happiness$year)
-
-ui <- dashboardPage(
-  dashboardHeader(title = "Happiness"),
-  dashboardSidebar(disable = T),
-  dashboardBody(
-  fluidRow(
-  box(title = "Plot Options", width = 3,
-  selectInput("factor", "Select Happiness Factors", choices = c("economy_gdp_per_capita", "family", "health_life_expectancy", "freedom", "trust_government_corruption"), 
-              selected = "economy_gdp_per_capita"),
-  helpText("Factors' values reflect the extent to which a factor contributes to the calculation of the Happiness Score")),
-  
-  box(title = "Plot of Happiness Factors Data", width = 7,
-  plotOutput("plot", width = "600px", height = "500px")))))
-
-server <- function(input, output, session) { 
-  output$plot <- renderPlot({
-  complete_happiness %>%
-      group_by(year) %>% 
-      summarize(mean_factor_value = mean(get(input$factor), na.rm=TRUE)) %>% 
-      ggplot(aes_string(x="year", y="mean_factor_value", fill="year"))+
-      geom_col()+
-      geom_text(aes(label = round(mean_factor_value, 2)),
-                position = position_dodge(width = 0.9),
-                vjust = -0.5,
-                color = "black",
-                size = 5)+
-      theme_linedraw()+
-      scale_fill_brewer(palette = "Pastel1")+
-      labs(x=NULL,
-           y="mean factor value")+
-      theme(axis.text.x = element_text(size = 15),
-            axis.text.y = element_text(size = 15),
-            axis.title.y = element_text(size = 18))
-
-  })
-  session$onSessionEnded(stopApp)
-  }
-
-shinyApp(ui, server)
-```
-
-## Relationship between Happiness Contributor and Happiness Score 2015 - 2019
-```{r}
-#happiness factors change from 2015-2019
-library(shiny)
-
-complete_happiness$year <- as.numeric(complete_happiness$year)
-
-ui <- dashboardPage(
-  dashboardHeader(title = "Happiness"),
-  dashboardSidebar(disable = T),
-  dashboardBody(
-  fluidRow(
-  box(title = "Plot Options", width = 3,
-  selectInput("factor", "Select Happiness Factors", choices = c("economy_gdp_per_capita", "family", "health_life_expectancy", "freedom", "trust_government_corruption"), 
-              selected = "economy_gdp_per_capita"),
-  sliderInput("year",
-              "Year:",
-              min = 2015,
-              max = 2019,
-              value = 2015,
-              step = 1),
-  
-  helpText("Factors' values reflect the extent to which a factor contributes to the calculation of the Happiness Score")),
-  
-  box(title = "Plot of Happiness Factors Data", width = 7,
-  plotOutput("plot", width = "600px", height = "500px")))))
-
-server <- function(input, output, session) { 
-  output$plot <- renderPlot({
-    complete_happiness %>% 
-      filter(year==input$year) %>% 
-      ggplot(aes_string(x=input$factor, y="happiness_score"))+
-      geom_point(size = 4, alpha = 0.5)+
-      geom_smooth(formula = y ~ x, method=lm, se=T)+
-      labs(y="Happiness Score")+
-      theme_linedraw()+
-      scale_color_brewer(palette = "Pastel1")+
-      labs(x="factor value",
-           y="happiness score")+
-      theme(axis.text.x = element_text(size = 15),
-            axis.text.y = element_text(size = 15),
-            axis.title.y = element_text(size = 18),
-            axis.title.x = element_text(size = 18))
-      
-    
-  })
-  session$onSessionEnded(stopApp)
-}
-
-shinyApp(ui, server)
-```
-
-
 
 
 ##Intereactive Map of Global Happiness Score
@@ -368,4 +266,6 @@ freedom_vec <- happiness_venn %>%
 why_happy_list <- list(happy_country_vec, gdp_vec, generosity_vec)
 ggVennDiagram(why_happy_list, category.names = c("Country with Happy Score", "GDP Contirbution", "Generosity Contribution"))
 ```
+
+
 
