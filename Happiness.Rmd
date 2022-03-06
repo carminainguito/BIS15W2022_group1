@@ -114,9 +114,11 @@ complete_happiness <- complete_happiness %>%
 ```{r}
 summary(complete_happiness)
 ```
+
 ```{r}
 glimpse(complete_happiness)
 ```
+
 ```{r}
 complete_happiness %>%
   naniar::miss_var_summary()
@@ -202,7 +204,7 @@ server <- function(input, output, session) {
       filter(year==input$year) %>% 
       ggplot(aes_string(x=input$factor, y="happiness_score"))+
       geom_point(size = 4, alpha = 0.5)+
-      geom_smooth(method=lm, se=T)+
+      geom_smooth(formula = y ~ x, method=lm, se=T)+
       labs(y="Happiness Score")+
       theme_linedraw()+
       scale_color_brewer(palette = "Pastel1")+
@@ -222,14 +224,7 @@ shinyApp(ui, server)
 ```
 
 
-## Data Visualization
-```{r}
-names(complete_happiness)
-```
-##Anlysis
-```{r}
-getwd()
-```
+
 
 ##Intereactive Map of Global Happiness Score
 ```{r}
@@ -277,6 +272,7 @@ world_map@data$happiness_score <- as.numeric(as.character(world_map@data$happine
 mypalette <- colorNumeric( palette="viridis", domain=world_map@data$happiness_score, na.color="transparent")
 mypalette(c(45,43))
 ```
+
 ```{r}
 m <- leaflet(world_map)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
   addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorNumeric("Set3", happiness_score)(happiness_score) )
@@ -286,7 +282,6 @@ m <- leaflet(world_map)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
 mybins <- c(0,2,4,6,8,10)
 mypalette <- colorBin( palette="YlOrBr", domain=world_map@data$happiness_score, na.color="transparent", bins=mybins)
 ```
-
 
 ```{r}
 mytext <- paste(
