@@ -15,11 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Load the libraries
 ```{r message=FALSE, warning=FALSE}
-library(leaflet)
-library(rgdal)
 library(ggplot2)
-library(maps)
-library(rworldmap)
 library(ggmap)
 library(tidyverse)
 library(RColorBrewer)
@@ -27,6 +23,7 @@ library(paletteer)
 library(janitor)
 library(here)
 library(ggthemes)
+library(ggVennDiagram)
 ```
 
 ```{r}
@@ -105,6 +102,20 @@ complete_happiness <- bind_rows(happiness_2015_join, happiness_2016_join, happin
 complete_happiness <- complete_happiness %>% 
   select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns
 ```
+```{r}
+complete_happiness_ave <- complete_happiness %>%
+  select(-happiness_rank)%>%
+  group_by(country_or_region)%>%
+  mutate(mean_happiness_score = mean(happiness_score), 
+         mean_gdp_contrib = mean(economy_gdp_per_capita), 
+         mean_family_contrib = mean(family), 
+         mean_health_contrib = mean(health_life_expectancy), 
+         mean_freedom_contrib = mean(freedom), 
+         mean_trust_contrib = mean(trust_government_corruption), 
+         mean_generosity_contrib = mean(generosity))
+
+```
+
 ## Exploring the Data 
 **Here, we're interested in understanding what kind of data we're going to be working with by utilizing several functions to observer its structure.**
 ```{r}
@@ -120,5 +131,55 @@ complete_happiness %>%
   naniar::miss_var_summary()
 ```
 
+##Venn Diagram
+```{r}
+happiness_venn <- complete_happiness_ave %>% 
+  mutate(economy_contribution_percentage = mean_gdp_contrib/mean_happiness_score,
+         family_contribution_percentage = mean_family_contrib/mean_happiness_score, 
+         health_contribution_percentage = mean_health_contrib/mean_happiness_score, 
+         freedom_contribution_percentage = mean_freedom_contrib/mean_happiness_score, 
+         generosity_contribution_percentage = mean_generosity_contrib/mean_happiness_score, 
+         happiness_category = case_when(mean_happiness_score <= 3 ~ "very unhappy",
+                                                   mean_happiness_score > 3 & mean_happiness_score <= 5 ~ "unhappy",
+                                                   mean_happiness_score > 5 & mean_happiness_score <= 7 ~ "happy",
+                                                   mean_happiness_score > 7 ~ "very happy"), 
+         economy_category = case_when(economy_contribution_percentage < 0.0833 ~ "insignificant",
+                                      economy_contribution_percentage >= 0.0833 ~ "significant"), 
+         family_category = case_when(family_contribution_percentage < 0.0833 ~ "insignificant",
+                                      family_contribution_percentage >= 0.0833 ~ "significant"),
+         health_category = case_when(health_contribution_percentage < 0.0833 ~ "insignificant",
+                                      health_contribution_percentage >= 0.0833 ~ "significant"),
+         freedom_category = case_when(freedom_contribution_percentage < 0.0833 ~ "insignificant", 
+                                      freedom_contribution_percentage >= 0.0833 ~ "significant"), 
+         generosity_category = case_when(generosity_contribution_percentage < 0.0833 ~ "insignificant",
+                                      generosity_contribution_percentage >= 0.0833 ~ "significant"))
+```
 
+```{r}
+happy_country_vec <- happiness_venn %>%
+  filter(happiness_category == "happy" | happiness_category == "very happy")%>%
+  pull(country_or_region)
+gdp_vec <- happiness_venn %>%
+  filter(economy_category == "significant")%>%
+  pull(country_or_region)
+generosity_vec <- happiness_venn %>%
+  filter(generosity_category == "significant")%>%
+  pull(country_or_region)
+family_vec <- happiness_venn %>%
+  filter(family_category == "significant")%>%
+  pull(country_or_region)
+health_vec <- happiness_venn %>%
+  filter(health_category == "significant")%>%
+  pull(country_or_region)
+freedom_vec <- happiness_venn %>%
+  filter(freedom_category == "significant")%>%
+  pull(country_or_region)
+```
 
+```{r}
+why_happy_list <- list(happy_country_vec, gdp_vec, generosity_vec)
+ggVennDiagram(why_happy_list, 
+              category.names = c("Happy Country", "GDP", "Generosity"), 
+              label_color = "black")+
+  ggplot2::scale_fill_gradient(low="navyblue",high = "yellow")
+```
