@@ -1,18 +1,16 @@
 ---
-title: "BIS 15L Group Project on Happiness"
+title: "Happiness"
 author: "Shuyi Bian, Carmina Inguito, Yutong Ji"
 date: "`2022-03-03`"
 output:
   html_document: 
     theme: spacelab
     keep_md: yes
-runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
 ## Introduction 
 
 ## Load the libraries
@@ -38,7 +36,8 @@ library(ggVennDiagram)
 options(scipen=999)
 ```
 
-## Load and Clean the Data
+
+## Laod and Clean the Data
 ```{r}
 happiness_2015 <- readr::read_csv("data/2015.csv")%>% 
   clean_names()
@@ -51,7 +50,6 @@ happiness_2018 <- readr::read_csv("data/2018.csv")%>%
 happiness_2019 <- readr::read_csv("data/2019.csv")%>% 
   clean_names()
 ```
-
 ## Merging Data Frames
 **Add year**
 ```{r}
@@ -110,193 +108,23 @@ complete_happiness <- bind_rows(happiness_2015_join, happiness_2016_join, happin
 complete_happiness <- complete_happiness %>% 
   select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns
 ```
-
 ## Exploring the Data 
-**Here, we're interested in understanding what kind of data we're going to be working with by utilizing several functions to observe its structure.**
+**Here, we're interested in understanding what kind of data we're going to be working with by utilizing several functions to observer its structure.**
 ```{r}
 summary(complete_happiness)
 ```
+
 ```{r}
 glimpse(complete_happiness)
 ```
+
 ```{r}
 complete_happiness %>%
   naniar::miss_var_summary()
 ```
 
-## Data Analysis
-```{r}
-names(happiness_2015_join)
-```
 
-```{r}
-colnames(complete_happiness)
-```
-
-**Creating specific column for 6 continents in 2015**
-
-*Note: Although Antarctica is considered a continent, there is no native human population, but instead, a transient population which didn't allow for a proper collection of data according to the factors within the dataset. It also has no government (with the few exceptions of international agreements) and no established economy besides offshore trading of fish and tourism.*
-
-```{r}
-happiness_2015_join$continent <- NA
-
-happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("New Zealand", "Australia"))] <- "Australia"
-happiness_2015_join$continent[which(is.na(happiness_2015_join$continent))] <- "Africa"
-
-happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Israel", "United Arab Emirates", "Singapore", "Thailand", "Taiwan Province of China",
-                                   "Qatar", "Saudi Arabia", "Kuwait", "Bahrain", "Malaysia", "Uzbekistan", "Japan",
-                                   "South Korea", "Turkmenistan", "Kazakhstan", "Turkey", "Hong Kong S.A.R., China", "Philippines",
-                                   "Jordan", "China", "Pakistan", "Indonesia", "Azerbaijan", "Lebanon", "Vietnam",
-                                   "Tajikistan", "Bhutan", "Kyrgyzstan", "Nepal", "Mongolia", "Palestinian Territories",
-                                   "Iran", "Bangladesh", "Myanmar", "Iraq", "Sri Lanka", "Armenia", "India", "Georgia",
-                                   "Cambodia", "Afghanistan", "Yemen", "Syria"))] <- "Asia"
-happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Norway", "Denmark", "Iceland", "Switzerland", "Finland",
-                                   "Netherlands", "Sweden", "Austria", "Ireland", "Germany",
-                                   "Belgium", "Luxembourg", "United Kingdom", "Czech Republic",
-                                   "Malta", "France", "Spain", "Slovakia", "Poland", "Italy",
-                                   "Russia", "Lithuania", "Latvia", "Moldova", "Romania",
-                                   "Slovenia", "North Cyprus", "Cyprus", "Estonia", "Belarus",
-                                   "Serbia", "Hungary", "Croatia", "Kosovo", "Montenegro", "Greece", "Portugal", "Bosnia and Herzegovina", "Macedonia",
-                                   "Bulgaria", "Albania", "Ukraine"))] <- "Europe"
-happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Canada", "Costa Rica", "United States", "Mexico",  
-                                   "Panama","Trinidad and Tobago", "El Salvador", "Belize", "Guatemala",
-                                   "Jamaica", "Nicaragua", "Dominican Republic", "Honduras",
-                                   "Haiti"))] <- "North America"
-happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Chile", "Brazil", "Argentina", "Uruguay",
-                                   "Colombia", "Ecuador", "Bolivia", "Peru",
-                                   "Paraguay", "Venezuela"))] <- "South America"
-
-# moving the continent column's position in the dataset to the second column
-
-happiness_2015_join <- happiness_2015_join %>% select(country_or_region,continent, everything())
-
-# changing Continent column to factor
-
-happiness_2015_join$continent <- as.factor(happiness_2015_join$continent)
-
-str(happiness_2015_join)
-```
-
-**Comparing `Happiness Score` across Asia, Europe, South America, North America, Australia, and Africa from 2015-2019**
-
-First we're going to look at how each continent's happiness score differ by creating a **box plot.**
-```{r}
-happiness_2015_join %>%
-  ggplot(aes(x = continent, y = happiness_score, fill= continent)) +
-  geom_boxplot(color= "black", na.rm=TRUE) +
-  theme_bw() +
-  theme(axis.title = element_text(size = (5)))+
-  ggtitle("Happiness Score Across 6 Continents in 2015")
-```
-
-To get a better idea of the range of data we're working with, we're using a **violin plot** to compare averages across categorical variables (the continents). 
-```{r}
-happiness_2015_join %>%
-  ggplot(aes(x=continent,y=happiness_score, fill=continent))+
-  geom_violin(alpha=0.75, na.rm=TRUE)
-```
-
-## Happiness Contributors' Change 2015 - 2019
-```{r}
-#happiness factors change from 2015-2019
-library(shiny)
-
-complete_happiness$year <- as.character(complete_happiness$year)
-
-ui <- dashboardPage(
-  dashboardHeader(title = "Happiness"),
-  dashboardSidebar(disable = T),
-  dashboardBody(
-  fluidRow(
-  box(title = "Plot Options", width = 3,
-  selectInput("factor", "Select Happiness Factors", choices = c("economy_gdp_per_capita", "family", "health_life_expectancy", "freedom", "trust_government_corruption"), 
-              selected = "economy_gdp_per_capita"),
-  helpText("Factors' values reflect the extent to which a factor contributes to the calculation of the Happiness Score")),
-  
-  box(title = "Plot of Happiness Factors Data", width = 7,
-  plotOutput("plot", width = "600px", height = "500px")))))
-
-server <- function(input, output, session) { 
-  output$plot <- renderPlot({
-  complete_happiness %>%
-      group_by(year) %>% 
-      summarize(mean_factor_value = mean(get(input$factor), na.rm=TRUE)) %>% 
-      ggplot(aes_string(x="year", y="mean_factor_value", fill="year"))+
-      geom_col()+
-      geom_text(aes(label = round(mean_factor_value, 2)),
-                position = position_dodge(width = 0.9),
-                vjust = -0.5,
-                color = "black",
-                size = 5)+
-      theme_linedraw()+
-      scale_fill_brewer(palette = "Pastel1")+
-      labs(x=NULL,
-           y="mean factor value")+
-      theme(axis.text.x = element_text(size = 15),
-            axis.text.y = element_text(size = 15),
-            axis.title.y = element_text(size = 18))
-
-  })
-  session$onSessionEnded(stopApp)
-  }
-
-shinyApp(ui, server)
-```
-
-## Relationship between Happiness Contributor and Happiness Score 2015 - 2019
-```{r}
-#happiness factors change from 2015-2019
-library(shiny)
-
-complete_happiness$year <- as.numeric(complete_happiness$year)
-
-ui <- dashboardPage(
-  dashboardHeader(title = "Happiness"),
-  dashboardSidebar(disable = T),
-  dashboardBody(
-  fluidRow(
-  box(title = "Plot Options", width = 3,
-  selectInput("factor", "Select Happiness Factors", choices = c("economy_gdp_per_capita", "family", "health_life_expectancy", "freedom", "trust_government_corruption"), 
-              selected = "economy_gdp_per_capita"),
-  sliderInput("year",
-              "Year:",
-              min = 2015,
-              max = 2019,
-              value = 2015,
-              step = 1),
-  
-  helpText("Factors' values reflect the extent to which a factor contributes to the calculation of the Happiness Score")),
-  
-  box(title = "Plot of Happiness Factors Data", width = 7,
-  plotOutput("plot", width = "600px", height = "500px")))))
-
-server <- function(input, output, session) { 
-  output$plot <- renderPlot({
-    complete_happiness %>% 
-      filter(year==input$year) %>% 
-      ggplot(aes_string(x=input$factor, y="happiness_score"))+
-      geom_point(size = 4, alpha = 0.5)+
-      geom_smooth(method=lm, se=T)+
-      labs(y="Happiness Score")+
-      theme_linedraw()+
-      scale_color_brewer(palette = "Pastel1")+
-      labs(x="factor value",
-           y="happiness score")+
-      theme(axis.text.x = element_text(size = 15),
-            axis.text.y = element_text(size = 15),
-            axis.title.y = element_text(size = 18),
-            axis.title.x = element_text(size = 18))
-      
-    
-  })
-  session$onSessionEnded(stopApp)
-}
-
-shinyApp(ui, server)
-```
-
-
-##Interactive Map of Global Happiness Score
+##Intereactive Map of Global Happiness Score
 ```{r}
 world_map <- readOGR( 
  dsn= paste0("data/TM_WORLD_BORDERS_SIMPL-0.3.shp"),
@@ -342,6 +170,7 @@ world_map@data$happiness_score <- as.numeric(as.character(world_map@data$happine
 mypalette <- colorNumeric( palette="viridis", domain=world_map@data$happiness_score, na.color="transparent")
 mypalette(c(45,43))
 ```
+
 ```{r}
 m <- leaflet(world_map)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
   addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorNumeric("Set3", happiness_score)(happiness_score) )
@@ -437,4 +266,6 @@ freedom_vec <- happiness_venn %>%
 why_happy_list <- list(happy_country_vec, gdp_vec, generosity_vec)
 ggVennDiagram(why_happy_list, category.names = c("Country with Happy Score", "GDP Contirbution", "Generosity Contribution"))
 ```
+
+
 
