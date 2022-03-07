@@ -1,1 +1,0 @@
-"0","fat_supply_2 <- fat_supply %>% rename_all(paste0, ""_f"")"

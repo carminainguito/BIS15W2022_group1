@@ -1,0 +1,200 @@
+---
+title: "Map App"
+output: html_document
+date: '2022-03-07'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(leaflet)
+library(rgdal)
+library(ggplot2)
+library(maps)
+library(rworldmap)
+library(ggmap)
+library(tidyverse)
+library(RColorBrewer)
+library(paletteer)
+library(janitor)
+library(ggthemes)
+```
+
+```{r}
+happiness_2015 <- readr::read_csv("data/2015.csv")%>% 
+  clean_names()
+happiness_2016 <- readr::read_csv("data/2016.csv")%>% 
+  clean_names()
+happiness_2017 <- readr::read_csv("data/2017.csv")%>% 
+  clean_names()
+happiness_2018 <- readr::read_csv("data/2018.csv")%>% 
+  clean_names()
+happiness_2019 <- readr::read_csv("data/2019.csv")%>% 
+  clean_names()
+```
+## Merging Data Frames
+**Add year**
+```{r}
+# Add year
+happiness_2015_join <- happiness_2015 %>% 
+  mutate(year = case_when(country != "NA" ~ "2015"))
+happiness_2016_join <- happiness_2016 %>% 
+  mutate(year = case_when(country != "NA" ~ "2016"))
+happiness_2017_join <- happiness_2017 %>% 
+  mutate(year = case_when(country != "NA" ~ "2017"))
+happiness_2018_join <- happiness_2018 %>% 
+  mutate(year = case_when(country_or_region != "NA" ~ "2018"))
+happiness_2019_join <- happiness_2019 %>% 
+  mutate(year = case_when(country_or_region != "NA" ~ "2019"))
+```
+
+**Change column names**
+```{r}
+#Change Column names
+happiness_2015_join <- happiness_2015_join %>% 
+  rename(country_or_region = country)
+
+happiness_2016_join <- happiness_2016_join %>% 
+  rename(country_or_region = country)
+
+happiness_2017_join <- happiness_2017_join %>% 
+  rename(country_or_region = country)
+
+happiness_2018_join <- happiness_2018_join %>% 
+  rename(happiness_rank = overall_rank,
+         happiness_score = score,
+         economy_gdp_per_capita = gdp_per_capita,
+         family = social_support,
+         health_life_expectancy = healthy_life_expectancy,
+         freedom = freedom_to_make_life_choices,
+         trust_government_corruption = perceptions_of_corruption)
+
+happiness_2019_join <- happiness_2019_join %>% 
+  rename(happiness_rank = overall_rank,
+         happiness_score = score,
+         economy_gdp_per_capita = gdp_per_capita,
+         family = social_support,
+         health_life_expectancy = healthy_life_expectancy,
+         freedom = freedom_to_make_life_choices,
+         trust_government_corruption = perceptions_of_corruption)
+```
+
+**Merge data frames together**
+```{r}
+#merge data frames together
+#thank you Joel
+happiness_2018_join$trust_government_corruption <- as.numeric(happiness_2018_join$trust_government_corruption)
+
+complete_happiness <- bind_rows(happiness_2015_join, happiness_2016_join, happiness_2017_join, happiness_2018_join, happiness_2019_join) #bind the data frames
+
+complete_happiness <- complete_happiness %>% 
+  select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns
+```
+
+```{r}
+world_map <- readOGR( 
+ dsn= paste0("data/TM_WORLD_BORDERS_SIMPL-0.3.shp"),
+ layer="TM_WORLD_BORDERS_SIMPL-0.3",
+  verbose=FALSE
+)
+```
+
+```{r}
+complete_happiness_ave <- complete_happiness %>%
+  select(-happiness_rank)%>%
+  group_by(country_or_region)%>%
+  mutate(mean_happiness_score = mean(happiness_score), 
+         mean_gdp_contrib = mean(economy_gdp_per_capita), 
+         mean_family_contrib = mean(family), 
+         mean_health_contrib = mean(health_life_expectancy), 
+         mean_freedom_contrib = mean(freedom), 
+         mean_trust_contrib = mean(trust_government_corruption), 
+         mean_generosity_contrib = mean(generosity))
+
+```
+
+```{r}
+happiness <- complete_happiness_ave %>%
+  select(country_or_region, mean_happiness_score, mean_gdp_contrib, mean_family_contrib, mean_health_contrib, mean_freedom_contrib, mean_trust_contrib, mean_generosity_contrib)%>%
+  rename(NAME="country_or_region")
+happiness
+```
+
+```{r}
+happiness2 <- happiness
+renamed <- happiness2$NAME
+renamed <- str_replace(renamed, c('Libya'), replacement = 'Libyan Arab Jamahiriya')
+renamed <- str_replace(renamed, c('Venezuela Bolivarian Republic of'), replacement = 'Venezuela')
+renamed <- str_replace(renamed, c('South Sudan'), replacement = 'Sudan')
+renamed <- str_replace(renamed, c('Congo (Brazzaville)'), replacement = 'Congo')
+renamed <- str_replace(renamed, c('Congo (Kinshasa)'), replacement = 'Democratic Republic of the Congo')
+renamed <- str_replace(renamed, c('Tanzania'), replacement = 'United Republic of Tanzania')
+renamed <- str_replace(renamed, c('Syria'), replacement = 'Syrian Arab Republic')
+renamed <- str_replace(renamed, c('Iran'), replacement = 'Iran (Islamic Republic of)')
+renamed <- str_replace(renamed, c('Moldova'), replacement = 'Republic of Moldavo')
+renamed <- str_replace(renamed, c('North Moldavo'), replacement = 'Republic of Moldavo')
+renamed <- str_replace(renamed, c('Laos'), replacement = 'Lao People Democratic Republic')
+happiness2$NAME = renamed
+```
+
+```{r}
+world_map@data <- left_join(world_map@data, happiness2, by="NAME")
+```
+
+```{r}
+world_map@data$mean_happiness_score[ which(world_map@data$happiness_score == 0)] = NA
+world_map@data$mean_happiness_score <- as.numeric(as.character(world_map@data$mean_happiness_score))%>% round(2)
+```
+
+```{r}
+mypalette <- colorNumeric( palette="viridis", domain=world_map@data$mean_happiness_score, na.color="transparent")
+mypalette(c(45,43))
+```
+
+```{r}
+m <- leaflet(world_map)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorNumeric("Set3", mean_happiness_score)(mean_happiness_score) )
+```
+
+```{r}
+mybins <- c(0,2,4,6,8,10)
+mypalette <- colorBin( palette="YlOrBr", domain=world_map@data$mean_happiness_score, na.color="transparent", bins=mybins)
+```
+
+```{r}
+mytext <- paste(
+    "Country: ", world_map@data$NAME,"<br/>", 
+    "GDP Contribution: ", world_map@data$mean_gdp_contrib, "<br/>", 
+    "Family Contribution: ", world_map@data$mean_family_contrib, "<br/>",
+    "Life Expectancy Contribution: ", world_map@data$mean_health_contrib, "<br/>",
+    "Freedom Contribution: ", world_map@data$mean_freedom_contrib, "<br/>",
+    "Government Trust Contribution: ", world_map@data$mean_trust_contrib, "<br/>",
+    "Generosity Contribution: ", world_map@data$mean_generosity_contrib, "<br/>",
+    "Happiness Score: ", round(world_map@data$mean_happiness_score, 2),
+    sep="") %>%
+  lapply(htmltools::HTML)
+```
+
+```{r}
+leaflet(world_map) %>% 
+  addTiles()  %>% 
+  setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons( 
+    fillColor = ~mypalette(mean_happiness_score), 
+    stroke=TRUE, 
+    fillOpacity = 0.9, 
+    color="white", 
+    weight=0.3,
+    label = mytext,
+    labelOptions = labelOptions( 
+      style = list("font-weight" = "normal", padding = "3px 8px"), 
+      textsize = "13px", 
+      direction = "auto"
+    )
+  ) %>%
+  addLegend( pal=mypalette, values=~population, opacity=0.9, title = "Happiness Score", position = "bottomleft" )
+
+m  
+```

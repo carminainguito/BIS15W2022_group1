@@ -27,9 +27,6 @@ library(paletteer)
 library(janitor)
 library(here)
 library(ggthemes)
-library(shiny)
-library(shinydashboard)
-library(ggVennDiagram)
 ```
 
 ```{r}
@@ -121,100 +118,6 @@ glimpse(complete_happiness)
 ```{r}
 complete_happiness %>%
   naniar::miss_var_summary()
-```
-
-
-##Intereactive Map of Global Happiness Score
-```{r}
-world_map <- readOGR( 
- dsn= paste0("data/TM_WORLD_BORDERS_SIMPL-0.3.shp"),
- layer="TM_WORLD_BORDERS_SIMPL-0.3",
-  verbose=FALSE
-)
-```
-
-```{r}
-happiness <- happiness_2019_join %>%
-  select(country_or_region, happiness_score, economy_gdp_per_capita, family, health_life_expectancy, freedom, generosity, trust_government_corruption)%>%
-  rename(NAME="country_or_region")
-happiness
-```
-**HELP HELP HELP HELP HELP**
-```{r}
-happiness2 <- happiness
-renamed <- happiness2$NAME
-renamed <- str_replace(renamed, c('Libya'), replacement = 'Libyan Arab Jamahiriya')
-renamed <- str_replace(renamed, c('Venezuela Bolivarian Republic of'), replacement = 'Venezuela')
-renamed <- str_replace(renamed, c('South Sudan'), replacement = 'Sudan')
-renamed <- str_replace(renamed, c('Congo (Brazzaville)'), replacement = 'Congo')
-renamed <- str_replace(renamed, c('Congo (Kinshasa)'), replacement = 'Democratic Republic of the Congo')
-renamed <- str_replace(renamed, c('Tanzania'), replacement = 'United Republic of Tanzania')
-renamed <- str_replace(renamed, c('Syria'), replacement = 'Syrian Arab Republic')
-renamed <- str_replace(renamed, c('Iran'), replacement = 'Iran (Islamic Republic of)')
-renamed <- str_replace(renamed, c('Moldova'), replacement = 'Republic of Moldavo')
-renamed <- str_replace(renamed, c('North Moldavo'), replacement = 'Republic of Moldavo')
-renamed <- str_replace(renamed, c('Laos'), replacement = 'Lao People Democratic Republic')
-happiness2$NAME = renamed
-```
-
-```{r}
-world_map@data <- left_join(world_map@data, happiness2, by="NAME")
-```
-
-```{r}
-world_map@data$happiness_score[ which(world_map@data$happiness_score == 0)] = NA
-world_map@data$happiness_score <- as.numeric(as.character(world_map@data$happiness_score))%>% round(2)
-```
-
-```{r}
-mypalette <- colorNumeric( palette="viridis", domain=world_map@data$happiness_score, na.color="transparent")
-mypalette(c(45,43))
-```
-
-```{r}
-m <- leaflet(world_map)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
-  addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorNumeric("Set3", happiness_score)(happiness_score) )
-```
-
-```{r}
-mybins <- c(0,2,4,6,8,10)
-mypalette <- colorBin( palette="YlOrBr", domain=world_map@data$happiness_score, na.color="transparent", bins=mybins)
-```
-
-```{r}
-mytext <- paste(
-    "Country: ", world_map@data$NAME,"<br/>", 
-    "GDP Contribution: ", world_map@data$economy_gdp_per_capita, "<br/>", 
-    "Family Contribution: ", world_map@data$family, "<br/>",
-    "Life Expectancy Contribution: ", world_map@data$health_life_expectancy, "<br/>",
-    "Freedom Contribution: ", world_map@data$freedom, "<br/>",
-    "Generosity Contribution: ", world_map@data$generosity, "<br/>",
-    "Government Trust Contribution: ", world_map@data$trust_government_corruption, "<br/>",
-    "Happiness Score: ", round(world_map@data$happiness_score, 2),
-    sep="") %>%
-  lapply(htmltools::HTML)
-```
-
-```{r}
-leaflet(world_map) %>% 
-  addTiles()  %>% 
-  setView( lat=10, lng=0 , zoom=2) %>%
-  addPolygons( 
-    fillColor = ~mypalette(happiness_score), 
-    stroke=TRUE, 
-    fillOpacity = 0.9, 
-    color="white", 
-    weight=0.3,
-    label = mytext,
-    labelOptions = labelOptions( 
-      style = list("font-weight" = "normal", padding = "3px 8px"), 
-      textsize = "13px", 
-      direction = "auto"
-    )
-  ) %>%
-  addLegend( pal=mypalette, values=~population, opacity=0.9, title = "Happiness Score", position = "bottomleft" )
-
-m  
 ```
 
 
