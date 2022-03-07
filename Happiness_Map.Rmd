@@ -106,7 +106,7 @@ world_map <- readOGR(
 complete_happiness_ave <- complete_happiness %>%
   select(-happiness_rank)%>%
   group_by(country_or_region)%>%
-  mutate(mean_happiness_score = mean(happiness_score), 
+  summarise(mean_happiness_score = mean(happiness_score), 
          mean_gdp_contrib = mean(economy_gdp_per_capita), 
          mean_family_contrib = mean(family), 
          mean_health_contrib = mean(health_life_expectancy), 
@@ -124,19 +124,20 @@ happiness
 ```
 
 ```{r}
-happiness2 <- happiness
+happiness2 <- happiness %>%
+  mutate(NAME = str_replace_all(NAME , "\\*|\\(|\\)", "")) %>% 
+  mutate(NAME = str_replace(NAME, c('&'), replacement = 'and'))
 renamed <- happiness2$NAME
 renamed <- str_replace(renamed, c('Libya'), replacement = 'Libyan Arab Jamahiriya')
 renamed <- str_replace(renamed, c('Venezuela Bolivarian Republic of'), replacement = 'Venezuela')
 renamed <- str_replace(renamed, c('South Sudan'), replacement = 'Sudan')
-renamed <- str_replace(renamed, c('Congo (Brazzaville)'), replacement = 'Congo')
-renamed <- str_replace(renamed, c('Congo (Kinshasa)'), replacement = 'Democratic Republic of the Congo')
-renamed <- str_replace(renamed, c('Tanzania'), replacement = 'United Republic of Tanzania')
+renamed <- str_replace(renamed, c('Congo Brazzaville'), replacement = 'Congo')
+renamed <- str_replace(renamed, c('Congo Kinshasa'), replacement = 'Democratic Republic of the Congo')
+renamed <- str_replace(renamed, c('Vietnam'), replacement = 'Viet Nam')
 renamed <- str_replace(renamed, c('Syria'), replacement = 'Syrian Arab Republic')
 renamed <- str_replace(renamed, c('Iran'), replacement = 'Iran (Islamic Republic of)')
 renamed <- str_replace(renamed, c('Moldova'), replacement = 'Republic of Moldavo')
 renamed <- str_replace(renamed, c('North Moldavo'), replacement = 'Republic of Moldavo')
-renamed <- str_replace(renamed, c('Laos'), replacement = 'Lao People Democratic Republic')
 happiness2$NAME = renamed
 ```
 
@@ -145,8 +146,8 @@ world_map@data <- left_join(world_map@data, happiness2, by="NAME")
 ```
 
 ```{r}
-world_map@data$mean_happiness_score[ which(world_map@data$happiness_score == 0)] = NA
-world_map@data$mean_happiness_score <- as.numeric(as.character(world_map@data$mean_happiness_score))%>% round(2)
+world_map@data$mean_happiness_score <- as.numeric(as.character(world_map@data$mean_happiness_score))%>% 
+  round(2)
 ```
 
 ```{r}
@@ -155,8 +156,10 @@ mypalette(c(45,43))
 ```
 
 ```{r}
-m <- leaflet(world_map)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
-  addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorNumeric("Set3", mean_happiness_score)(mean_happiness_score) )
+m <- leaflet(world_map)%>% 
+  addTiles()%>% 
+  setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons(stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorNumeric("Set3", mean_happiness_score)(mean_happiness_score) )
 ```
 
 ```{r}
