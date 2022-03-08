@@ -1,0 +1,359 @@
+---
+title: "BIS 15L Project on Happiness"
+author: "Carmina Inguito"
+date: "3/8/2022"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview of my focus 
+After exploring the data by looking at its structure through functions like `glimpse`, `summary`, and `naniar::miss_var_summary()`, I analyzed 6 continents and their happiness scores between 2015 and 2019. In addition, I observed the relationship between happiness factors and their happiness overall. Just out of interest, I also took a look at the 2021 report on Happiness and did a short analysis at the end.
+
+## Load the Libraries 
+```{r}
+library(ggwordcloud)
+library(ggplot2)
+library(tidyverse)
+library(RColorBrewer)
+library(paletteer)
+library(janitor)
+library(ggthemes)
+library(corrplot)
+```
+
+```{r}
+options(scipen=999)
+```
+
+## Load and Clean the Data 
+```{r}
+happiness_2015 <- readr::read_csv("data/2015.csv")%>% 
+  clean_names()
+
+happiness_2016 <- readr::read_csv("data/2016.csv")%>% 
+  clean_names()
+
+happiness_2017 <- readr::read_csv("data/2017.csv")%>% 
+  clean_names()
+
+happiness_2018 <- readr::read_csv("data/2018.csv")%>% 
+  clean_names()
+
+happiness_2019 <- readr::read_csv("data/2019.csv")%>% 
+  clean_names()
+```
+
+## Merging Data Frames
+**Add year**
+```{r}
+# Add year
+happiness_2015_join <- happiness_2015 %>% 
+  mutate(year = case_when(country != "NA" ~ "2015"))
+happiness_2016_join <- happiness_2016 %>% 
+  mutate(year = case_when(country != "NA" ~ "2016"))
+happiness_2017_join <- happiness_2017 %>% 
+  mutate(year = case_when(country != "NA" ~ "2017"))
+happiness_2018_join <- happiness_2018 %>% 
+  mutate(year = case_when(country_or_region != "NA" ~ "2018"))
+happiness_2019_join <- happiness_2019 %>% 
+  mutate(year = case_when(country_or_region != "NA" ~ "2019"))
+```
+
+**Change column names**
+```{r}
+#Change Column names
+happiness_2015_join <- happiness_2015_join %>% 
+  rename(country_or_region = country)
+
+happiness_2016_join <- happiness_2016_join %>% 
+  rename(country_or_region = country)
+
+happiness_2017_join <- happiness_2017_join %>% 
+  rename(country_or_region = country)
+
+happiness_2018_join <- happiness_2018_join %>% 
+  rename(happiness_rank = overall_rank,
+         happiness_score = score,
+         economy_gdp_per_capita = gdp_per_capita,
+         family = social_support,
+         health_life_expectancy = healthy_life_expectancy,
+         freedom = freedom_to_make_life_choices,
+         trust_government_corruption = perceptions_of_corruption)
+
+happiness_2019_join <- happiness_2019_join %>% 
+  rename(happiness_rank = overall_rank,
+         happiness_score = score,
+         economy_gdp_per_capita = gdp_per_capita,
+         family = social_support,
+         health_life_expectancy = healthy_life_expectancy,
+         freedom = freedom_to_make_life_choices,
+         trust_government_corruption = perceptions_of_corruption)
+```
+
+**Merge data frames together**
+```{r}
+#merge data frames together
+#thank you Joel
+happiness_2018_join$trust_government_corruption <- as.numeric(happiness_2018_join$trust_government_corruption)
+```
+
+```{r}
+complete_happiness <- bind_rows(happiness_2015_join, happiness_2016_join, happiness_2017_join, happiness_2018_join, happiness_2019_join) #bind the data frames
+
+complete_happiness <- complete_happiness %>% 
+  select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns
+```
+
+
+## Exploring the Data
+**Here, we’re interested in understanding what kind of data we’re going to be working with by utilizing several functions to observe its structure.**
+
+```{r}
+summary(complete_happiness)
+```
+
+```{r}
+glimpse(complete_happiness)
+```
+
+```{r}
+complete_happiness %>%
+  naniar::miss_var_summary()
+```
+
+```{r}
+names(complete_happiness)
+```
+
+**Creating specific columns for six continents in 2015**
+
+*Note: Although Antarctica is considered a continent, there is no native human population, but instead, a transient population which didn’t allow for a proper collection of data according to the factors within the dataset. It also has no government (with the few exceptions of international agreements) and no established economy besides offshore trading of fish and tourism.*
+```{r}
+happiness_2015_join$continent <- NA
+
+happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("New Zealand", "Australia"))] <- "Australia"
+
+happiness_2015_join$continent[which(is.na(happiness_2015_join$continent))] <- "Africa"
+
+happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Israel", "United Arab Emirates", "Singapore", "Thailand", "Taiwan Province of China", "Qatar", "Saudi Arabia", "Kuwait", "Bahrain", "Malaysia", "Uzbekistan", "Japan", "South Korea", "Turkmenistan", "Kazakhstan", "Turkey", "Hong Kong S.A.R., China", "Philippines", "Jordan", "China", "Pakistan", "Indonesia", "Azerbaijan", "Lebanon", "Vietnam", "Tajikistan", "Bhutan", "Kyrgyzstan", "Nepal", "Mongolia", "Palestinian Territories", "Iran", "Bangladesh", "Myanmar", "Iraq", "Sri Lanka", "Armenia", "India", "Georgia", "Cambodia", "Afghanistan", "Yemen", "Syria"))] <- "Asia"
+
+happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Norway", "Denmark", "Iceland", "Switzerland", "Finland", "Netherlands", "Sweden", "Austria", "Ireland", "Germany", "Belgium", "Luxembourg", "United Kingdom", "Czech Republic", "Malta", "France", "Spain", "Slovakia", "Poland", "Italy", "Russia", "Lithuania", "Latvia", "Moldova", "Romania", "Slovenia", "North Cyprus", "Cyprus", "Estonia", "Belarus", "Serbia", "Hungary", "Croatia", "Kosovo", "Montenegro", "Greece", "Portugal", "Bosnia and Herzegovina", "Macedonia", "Bulgaria", "Albania", "Ukraine"))] <- "Europe"
+
+happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Canada", "Costa Rica", "United States", "Mexico", "Panama","Trinidad and Tobago", "El Salvador", "Belize", "Guatemala", "Jamaica", "Nicaragua", "Dominican Republic", "Honduras", "Haiti"))] <- "North America"
+
+happiness_2015_join$continent[which(happiness_2015_join$country_or_region %in% c("Chile", "Brazil", "Argentina", "Uruguay", "Colombia", "Ecuador", "Bolivia", "Peru","Paraguay", "Venezuela"))] <- "South America"
+
+# moving the continent column's position in the dataset to the second column
+
+happiness_2015_join <- happiness_2015_join %>% select(country_or_region,continent, everything())
+
+# changing Continent column to factor
+
+happiness_2015_join$continent <- as.factor(happiness_2015_join$continent)
+
+str(happiness_2015_join)
+```
+
+**Creating specific columns for six continents in 2019.**
+```{r}
+happiness_2019_join$continent <- NA
+
+happiness_2019_join$continent[which(happiness_2019_join$country_or_region %in% c("New Zealand", "Australia"))] <- "Australia"
+
+happiness_2019_join$continent[which(is.na(happiness_2019_join$continent))] <- "Africa"
+
+happiness_2019_join$continent[which(happiness_2019_join$country_or_region %in% c("Israel", "United Arab Emirates", "Singapore", "Thailand", "Taiwan Province of China", "Qatar", "Saudi Arabia", "Kuwait", "Bahrain", "Malaysia", "Uzbekistan", "Japan", "South Korea", "Turkmenistan", "Kazakhstan", "Turkey", "Hong Kong S.A.R., China", "Philippines", "Jordan", "China", "Pakistan", "Indonesia", "Azerbaijan", "Lebanon", "Vietnam", "Tajikistan", "Bhutan", "Kyrgyzstan", "Nepal", "Mongolia", "Palestinian Territories","Iran", "Bangladesh", "Myanmar", "Iraq", "Sri Lanka", "Armenia", "India", "Georgia", "Cambodia", "Afghanistan", "Yemen", "Syria"))] <- "Asia"
+
+happiness_2019_join$continent[which(happiness_2019_join$country_or_region %in% c("Norway", "Denmark", "Iceland", "Switzerland", "Finland","Netherlands", "Sweden", "Austria", "Ireland", "Germany", "Belgium", "Luxembourg", "United Kingdom", "Czech Republic", "Malta", "France", "Spain", "Slovakia", "Poland", "Italy", "Russia", "Lithuania", "Latvia", "Moldova", "Romania", "Slovenia", "North Cyprus", "Cyprus", "Estonia", "Belarus", "Serbia", "Hungary", "Croatia", "Kosovo", "Montenegro", "Greece", "Portugal", "Bosnia and Herzegovina", "Macedonia", "Bulgaria", "Albania", "Ukraine"))] <- "Europe"
+
+happiness_2019_join$continent[which(happiness_2019_join$country_or_region %in% c("Canada", "Costa Rica", "United States", "Mexico", "Panama","Trinidad and Tobago", "El Salvador", "Belize", "Guatemala", "Jamaica", "Nicaragua", "Dominican Republic", "Honduras", "Haiti"))] <- "North America"
+
+happiness_2019_join$continent[which(happiness_2019_join$country_or_region %in% c("Chile", "Brazil", "Argentina", "Uruguay", "Colombia", "Ecuador", "Bolivia", "Peru", "Paraguay", "Venezuela"))] <- "South America"
+
+happiness_2019_join$continent <- as.factor(happiness_2019_join$continent)
+
+str(happiness_2019_join)
+```
+
+**Creating specific columns for six continents in `complete_happiness`.**
+```{r}
+complete_happiness$continent <- NA
+
+complete_happiness$continent[which(complete_happiness$country_or_region %in% c("New Zealand", "Australia"))] <- "Australia"
+
+complete_happiness$continent[which(is.na(complete_happiness$continent))] <- "Africa"
+
+complete_happiness$continent[which(complete_happiness$country_or_region %in% c("Israel", "United Arab Emirates", "Singapore", "Thailand", "Taiwan Province of China", "Qatar", "Saudi Arabia", "Kuwait", "Bahrain", "Malaysia", "Uzbekistan", "Japan", "South Korea", "Turkmenistan", "Kazakhstan", "Turkey", "Hong Kong S.A.R., China", "Philippines", "Jordan", "China", "Pakistan", "Indonesia", "Azerbaijan", "Lebanon", "Vietnam", "Tajikistan", "Bhutan", "Kyrgyzstan", "Nepal", "Mongolia", "Palestinian Territories", "Iran", "Bangladesh", "Myanmar", "Iraq", "Sri Lanka", "Armenia", "India", "Georgia", "Cambodia", "Afghanistan", "Yemen", "Syria"))] <- "Asia"
+
+complete_happiness$continent[which(complete_happiness$country_or_region %in% c("Norway", "Denmark", "Iceland", "Switzerland", "Finland", "Netherlands", "Sweden", "Austria", "Ireland", "Germany", "Belgium", "Luxembourg", "United Kingdom", "Czech Republic", "Malta", "France", "Spain", "Slovakia", "Poland", "Italy", "Russia", "Lithuania", "Latvia", "Moldova", "Romania", "Slovenia", "North Cyprus", "Cyprus", "Estonia", "Belarus", "Serbia", "Hungary", "Croatia", "Kosovo", "Montenegro", "Greece", "Portugal", "Bosnia and Herzegovina", "Macedonia", "Bulgaria", "Albania", "Ukraine"))] <- "Europe"
+
+complete_happiness$continent[which(complete_happiness$country_or_region %in% c("Canada", "Costa Rica", "United States", "Mexico", "Panama","Trinidad and Tobago", "El Salvador", "Belize", "Guatemala", "Jamaica", "Nicaragua", "Dominican Republic", "Honduras", "Haiti"))] <- "North America"
+
+complete_happiness$continent[which(complete_happiness$country_or_region %in% c("Chile", "Brazil", "Argentina", "Uruguay", "Colombia", "Ecuador", "Bolivia", "Peru","Paraguay", "Venezuela"))] <- "South America"
+
+complete_happiness$continent <- as.factor(complete_happiness$continent)
+
+str(complete_happiness)
+```
+
+
+## Happiness Score by Continents (with Boxplots)
+
+**Comparing `Happiness_Score` across Asia, Europe, South America, North America, Australia, and Africa for 2015**
+We’re going to look at how each continent’s happiness score differ by creating a **box plot.**
+```{r}
+happiness_2015_join %>%
+  ggplot(aes(x = continent, y = happiness_score, fill= continent)) +
+  geom_boxplot(color= "black", na.rm=TRUE) +
+  theme_bw() +
+  theme(axis.title = element_text(size = (8)))+
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))+
+  ggtitle("Happiness Score Across 6 Continents in 2015")+
+  theme(plot.title=element_text(face="bold",hjust=0.5))+
+  scale_fill_brewer(palette = "Set2")
+```
+
+
+**Comparing `Happiness_Score` across Asia, Europe, South America, North America, Australia, and Africa for 2019**
+```{r}
+happiness_2019_join %>%
+  ggplot(aes(x = continent, y = happiness_score, fill= continent)) +
+  geom_boxplot(color= "black", na.rm=TRUE) +
+  theme_bw() +
+  theme(axis.title = element_text(size = (8)))+
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))+
+  ggtitle("Happiness Score Across 6 Continents in 2019")+
+  theme(plot.title=element_text(face="bold",hjust=0.5))+
+  scale_fill_brewer(palette = "Set2")
+```
+
+As one can see, both 2015 and 2019 *relatively* have the same distribution of happiness scores. However, Europe has increased its median of its score above 6.0 and South America has decreased its happiness score by about 0.5 as it nears a score of 6.0 for its median. Unlike 2015, there are a few more outliers demonstrates in the boxplot of 2019.
+
+## Analyzing mean of happiness factors compared to overall happiness score (with facet_wrap)
+
+**Finding the average values of happiness variables for each continent and viewing its relationship with their average happiness score.**
+```{r}
+avg_happiness <-complete_happiness %>%
+  group_by(continent) %>%
+  summarise(across(happiness_score:generosity, list(mean), na.rm=T))%>%       
+  head(n=6)
+avg_happiness
+```
+
+*Renaming Columns*
+```{r}
+avg_happiness <- avg_happiness %>%
+  rename(happiness_score=happiness_score_1, economy= economy_gdp_per_capita_1, family=family_1, life_expectancy=health_life_expectancy_1, freedom=freedom_1, trust=trust_government_corruption_1, generosity=generosity_1)
+avg_happiness
+```
+
+Using **facet_wrap** we can get a better interpretation of how the variables contribute to happiness for 2015 and 2019. This will oversee the 6 continents we previously looked at.
+
+
+## Correlation between happiness factors from 2015-2019 (with Correlation Map)
+
+**First, we’re going to make sure that we only use numerical variables to view the correlation.**
+```{r}
+str(complete_happiness)
+```
+
+```{r}
+#selecting only numerical columns in the dataset
+complete_happiness2 <- subset(complete_happiness, select=c("happiness_rank", "happiness_score", "economy_gdp_per_capita", "family", "health_life_expectancy", "freedom", "trust_government_corruption", "generosity"))
+```
+
+**What factors have a weak relationship with happiness? What about strong? Overall, we’re trying to see what factors drive a higher happiness score in our data.**
+```{r}
+#utilizing newly installed package called corrplot to view correlations
+cor_2015_to_2019 <- cor(complete_happiness2[,-1],use="complete.obs")
+cor_2015_to_2019
+```
+
+```{r}
+#using method "color"
+corrplot(cor_2015_to_2019, method="color", tl.col = 'black', cl.ratio = 0.5, tl.srt = 45, title="Correlation Between Factors of Happiness and the Happiness Score", mar=c(0,0,1,0), tl.cex = 0.60)
+```
+
+```{r}
+#using method "number"
+corrplot(cor_2015_to_2019, method = "number", tl.col = 'black', cl.ratio = 0.2, tl.srt = 45, title="Correlation Between Factors of Happiness and the Happiness Score", mar=c(0,0,1,0), tl.cex = 0.60)
+```
+
+-Using only numerical variables and excluding the country/region and continent, I got to see that **family, life expectancy, and economy (GDP)** were the factors that greatly contributed to the happiness score or in other words, had a positive relationship.
+
+-Surprisingly, **generosity** had little to no relationship to happiness.
+
+-It makes sense that a better economy (greater influx in money) will have a **positive effect** on happiness; therefore, being able to live longer (likely due to easier access to healthcare/aid), and have support from family.
+
+
+## Viewing the 2021 Happiness Report Data
+Lastly, out of curiosity I wanted to see how happiness between countries have changed in the most recent dataset of 2021 especially with the COVID-19 Pandemic taken into account.
+
+**Loading and Cleaning the Data**
+```{r}
+happiness_2021 <- readr::read_csv("data/2021.csv")%>%clean_names()
+```
+
+```{r}
+#choosing specific columns to focus on in analysis 
+happiness_2021 <- subset(happiness_2021, select=c("country_name", "regional_indicator", "ladder_score", "logged_gdp_per_capita", "social_support", "healthy_life_expectancy", "freedom_to_make_life_choices", "generosity", "perceptions_of_corruption", "dystopia_residual"))
+happiness_2021
+```
+
+*Renaming Column Names*
+```{r}
+#renaming column names
+happiness_2021 <- happiness_2021 %>%
+  dplyr::rename(country=country_name, region=regional_indicator, happiness_score=ladder_score, gdp=logged_gdp_per_capita, life_expectancy= healthy_life_expectancy, freedom=freedom_to_make_life_choices, corruption=perceptions_of_corruption)
+```
+
+Now, the interesting part! I’ll be seeing both the top 10 most happiest countries as well as the 10 least happiest countries so that we can compare the two.
+
+**Viewing top 10 happiest countries in 2021**
+```{r}
+happiness_2021 %>% 
+  arrange(desc(happiness_score)) %>%
+  head(10) %>% 
+  ggplot(aes(x = happiness_score, y = reorder(country, happiness_score),  fill = country)) +
+  geom_point(aes(color = region)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Top Ten Happiest Countries in 2021") + ylab("Countries") + xlab("Happiness Score") +scale_fill_brewer(palette = "Set3") + geom_text(aes(label = happiness_score), position=position_stack(vjust=0.9),color="black",size=3)+
+  theme(plot.title=element_text(face="bold",hjust=0.5))
+```
+
+**Viewing the 10 least happiest countries in 2021...**
+```{r}
+happiness_2021 %>% 
+  arrange(happiness_score) %>% 
+  head(10) %>% 
+  ggplot(aes(x = happiness_score, y = reorder(country, happiness_score),  fill = country)) + geom_point(aes(color = region)) + geom_bar(stat = "identity") + labs(title = "Bottom Ten Happiest Countries during 2021") + ylab("Countries") + xlab("Happiness Score") + scale_fill_brewer(palette = "Set3") + geom_text(aes(label = happiness_score), position=position_stack(vjust=0.9),color="black",size=3)+
+  theme(plot.title=element_text(face="bold",hjust=0.5))
+```
+
+**Finally, we’re going to view 7 happiness factors by creating a `word_ cloud` to see which one stands out to be the most contributing factor to happiness**
+```{r}
+#creating frequency table
+factor_frequency <- happiness_2021 %>%
+  select(-country, -region) %>%
+  summarise_all(~(sum(.))) %>%
+  pivot_longer(everything(), names_to = "happiness_factor", values_to = "frequency")
+factor_frequency
+```
+
+```{r}
+#generating word cloud (thank you Hannah!) 
+factor_frequency%>%
+  ggplot(aes(label=happiness_factor, size=frequency, color=happiness_factor)) + geom_text_wordcloud() + scale_size_area(max_size = 15) + theme_minimal()
+```
+
+Overall, I think each country’s level of happiness greatly depended on their response to the pandemic. Life expectancy is inevitably one of the most notable factors to happiness likely because of trust and confidence in government. The more individuals had trust, the greater life expectancy or more proper protection for the country.
+*Note: Dystopia Residual refers to a country’s difference from “a hypothetical country that has values equal to the world’s lowest national averages for each of the six factors.”*
+
+
+## Closing Remarks 
+Even with a few challenges along the way, it was interesting to see how the idea of “happiness” is achieved not just by the countries but also with certain factors that go along with it! Everyone wants to be happy at the end of the day… right? :)
