@@ -15,20 +15,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Load the libraries
 ```{r message=FALSE, warning=FALSE}
-library(leaflet)
-library(rgdal)
 library(ggplot2)
-library(maps)
-library(rworldmap)
-library(ggmap)
 library(tidyverse)
 library(RColorBrewer)
 library(paletteer)
 library(janitor)
-library(here)
 library(ggthemes)
-library(shiny)
-library(shinydashboard)
+library(scales)
 library(ggVennDiagram)
 ```
 
@@ -109,121 +102,44 @@ complete_happiness <- complete_happiness %>%
   select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns
 ```
 
-##Intereactive Map of Global Happiness Score
 ```{r}
-world_map <- readOGR( 
- dsn= paste0("data/TM_WORLD_BORDERS_SIMPL-0.3.shp"),
- layer="TM_WORLD_BORDERS_SIMPL-0.3",
-  verbose=FALSE
-)
-```
-
-```{r}
-happiness <- happiness_2019_join %>%
-  select(country_or_region, happiness_score, economy_gdp_per_capita, family, health_life_expectancy, freedom, generosity, trust_government_corruption)%>%
-  rename(NAME="country_or_region")
-happiness
-```
-**HELP HELP HELP HELP HELP**
-```{r}
-happiness2 <- happiness
-renamed <- happiness2$NAME
-renamed <- str_replace(renamed, c('Libya'), replacement = 'Libyan Arab Jamahiriya')
-renamed <- str_replace(renamed, c('Venezuela Bolivarian Republic of'), replacement = 'Venezuela')
-renamed <- str_replace(renamed, c('South Sudan'), replacement = 'Sudan')
-renamed <- str_replace(renamed, c('Congo (Brazzaville)'), replacement = 'Congo')
-renamed <- str_replace(renamed, c('Congo (Kinshasa)'), replacement = 'Democratic Republic of the Congo')
-renamed <- str_replace(renamed, c('Tanzania'), replacement = 'United Republic of Tanzania')
-renamed <- str_replace(renamed, c('Syria'), replacement = 'Syrian Arab Republic')
-renamed <- str_replace(renamed, c('Iran'), replacement = 'Iran (Islamic Republic of)')
-renamed <- str_replace(renamed, c('Moldova'), replacement = 'Republic of Moldavo')
-renamed <- str_replace(renamed, c('North Moldavo'), replacement = 'Republic of Moldavo')
-renamed <- str_replace(renamed, c('Laos'), replacement = 'Lao People Democratic Republic')
-happiness2$NAME = renamed
-```
-
-```{r}
-world_map@data <- left_join(world_map@data, happiness2, by="NAME")
-```
-
-```{r}
-world_map@data$happiness_score[ which(world_map@data$happiness_score == 0)] = NA
-world_map@data$happiness_score <- as.numeric(as.character(world_map@data$happiness_score))%>% round(2)
-```
-
-```{r}
-mypalette <- colorNumeric( palette="viridis", domain=world_map@data$happiness_score, na.color="transparent")
-mypalette(c(45,43))
-```
-
-```{r}
-m <- leaflet(world_map)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
-  addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorNumeric("Set3", happiness_score)(happiness_score) )
-```
-
-```{r}
-mybins <- c(0,2,4,6,8,10)
-mypalette <- colorBin( palette="YlOrBr", domain=world_map@data$happiness_score, na.color="transparent", bins=mybins)
-```
-
-```{r}
-mytext <- paste(
-    "Country: ", world_map@data$NAME,"<br/>", 
-    "GDP Contribution: ", world_map@data$economy_gdp_per_capita, "<br/>", 
-    "Family Contribution: ", world_map@data$family, "<br/>",
-    "Life Expectancy Contribution: ", world_map@data$health_life_expectancy, "<br/>",
-    "Freedom Contribution: ", world_map@data$freedom, "<br/>",
-    "Generosity Contribution: ", world_map@data$generosity, "<br/>",
-    "Government Trust Contribution: ", world_map@data$trust_government_corruption, "<br/>",
-    "Happiness Score: ", round(world_map@data$happiness_score, 2),
-    sep="") %>%
-  lapply(htmltools::HTML)
-```
-
-```{r}
-leaflet(world_map) %>% 
-  addTiles()  %>% 
-  setView( lat=10, lng=0 , zoom=2) %>%
-  addPolygons( 
-    fillColor = ~mypalette(happiness_score), 
-    stroke=TRUE, 
-    fillOpacity = 0.9, 
-    color="white", 
-    weight=0.3,
-    label = mytext,
-    labelOptions = labelOptions( 
-      style = list("font-weight" = "normal", padding = "3px 8px"), 
-      textsize = "13px", 
-      direction = "auto"
-    )
-  ) %>%
-  addLegend( pal=mypalette, values=~population, opacity=0.9, title = "Happiness Score", position = "bottomleft" )
-
-m  
+complete_happiness_ave <- complete_happiness %>%
+  select(-happiness_rank)%>%
+  group_by(country_or_region)%>%
+  summarise(mean_happiness_score = mean(happiness_score), 
+         mean_gdp_contrib = mean(economy_gdp_per_capita), 
+         mean_family_contrib = mean(family), 
+         mean_health_contrib = mean(health_life_expectancy), 
+         mean_freedom_contrib = mean(freedom), 
+         mean_trust_contrib = mean(trust_government_corruption), 
+         mean_generosity_contrib = mean(generosity))
 ```
 
 ##Venn Diagram
 ```{r}
-happiness_venn <- happiness_2019_join %>% 
-  mutate(economy_contribution_percentage = economy_gdp_per_capita/happiness_score,
-         family_contribution_percentage = family/happiness_score, 
-         health_contribution_percentage = health_life_expectancy/happiness_score, 
-         freedom_contribution_percentage = freedom/happiness_score, 
-         generosity_contribution_percentage = generosity/happiness_score, 
-         happiness_category = case_when(happiness_score <= 3 ~ "very unhappy",
-                                                   happiness_score > 3 & happiness_score <= 5 ~ "unhappy",
-                                                   happiness_score > 5 & happiness_score <= 7 ~ "happy",
-                                                   happiness_score > 7 ~ "very happy"), 
-         economy_category = case_when(economy_contribution_percentage < 0.1 ~ "insignificant",
-                                      economy_contribution_percentage >= 0.1 ~ "significant"), 
-         family_category = case_when(family_contribution_percentage < 0.1 ~ "insignificant",
-                                      family_contribution_percentage >= 0.1 ~ "significant"),
-         health_category = case_when(health_contribution_percentage < 0.1 ~ "insignificant",
-                                      health_contribution_percentage >= 0.1 ~ "significant"),
-         freedom_category = case_when(freedom_contribution_percentage < 0.1 ~ "insignificant", 
-                                      freedom_contribution_percentage >= 0.1 ~ "significant"), 
-         generosity_category = case_when(generosity_contribution_percentage < 0.1 ~ "insignificant",
-                                      generosity_contribution_percentage >= 0.1 ~ "significant"))
+happiness_venn <- complete_happiness_ave %>% 
+  mutate(economy_contribution_percentage = mean_gdp_contrib/mean_happiness_score,
+         family_contribution_percentage = mean_family_contrib/mean_happiness_score, 
+         health_contribution_percentage = mean_health_contrib/mean_happiness_score, 
+         freedom_contribution_percentage = mean_freedom_contrib/mean_happiness_score, 
+         generosity_contribution_percentage = mean_generosity_contrib/mean_happiness_score, 
+         trust_contribution_percentage = mean_trust_contrib/mean_happiness_score, 
+         happiness_category = case_when(mean_happiness_score <= 3 ~ "very unhappy",
+                                                   mean_happiness_score > 3 & mean_happiness_score <= 5 ~ "unhappy",
+                                                   mean_happiness_score > 5 & mean_happiness_score <= 7 ~ "happy",
+                                                   mean_happiness_score > 7 ~ "very happy"), 
+         economy_category = case_when(economy_contribution_percentage < 0.0833 ~ "insignificant",
+                                      economy_contribution_percentage >= 0.0833 ~ "significant"), 
+         family_category = case_when(family_contribution_percentage < 0.0833 ~ "insignificant",
+                                      family_contribution_percentage >= 0.0833 ~ "significant"),
+         health_category = case_when(health_contribution_percentage < 0.0833 ~ "insignificant",
+                                      health_contribution_percentage >= 0.0833 ~ "significant"),
+         freedom_category = case_when(freedom_contribution_percentage < 0.0833 ~ "insignificant", 
+                                      freedom_contribution_percentage >= 0.0833 ~ "significant"), 
+         generosity_category = case_when(generosity_contribution_percentage < 0.0833 ~ "insignificant",
+                                      generosity_contribution_percentage >= 0.0833 ~ "significant"),
+         trust_category = case_when(trust_contribution_percentage < 0.0833 ~ "insignificant",
+                                      trust_contribution_percentage >= 0.0833 ~ "significant"))
 ```
 
 ```{r}
@@ -231,25 +147,218 @@ happy_country_vec <- happiness_venn %>%
   filter(happiness_category == "happy" | happiness_category == "very happy")%>%
   pull(country_or_region)
 gdp_vec <- happiness_venn %>%
-  filter(economy_category == "significant")%>%
+  filter(happiness_category == "happy" | happiness_category == "very happy" | economy_category == "significant")%>%
   pull(country_or_region)
 generosity_vec <- happiness_venn %>%
-  filter(generosity_category == "significant")%>%
+  filter(happiness_category == "happy" | happiness_category == "very happy" | generosity_category == "significant")%>%
   pull(country_or_region)
 family_vec <- happiness_venn %>%
-  filter(family_category == "significant")%>%
+  filter(happiness_category == "happy" | happiness_category == "very happy" | family_category == "significant")%>%
   pull(country_or_region)
 health_vec <- happiness_venn %>%
-  filter(health_category == "significant")%>%
+  filter(happiness_category == "happy" | happiness_category == "very happy" | health_category == "significant")%>%
   pull(country_or_region)
 freedom_vec <- happiness_venn %>%
-  filter(freedom_category == "significant")%>%
+  filter(happiness_category == "happy" | happiness_category == "very happy" | freedom_category == "significant")%>%
+  pull(country_or_region)
+trust_vec <- happiness_venn %>%
+  filter(happiness_category == "happy" | happiness_category == "very happy" | trust_category == "significant")%>%
   pull(country_or_region)
 ```
 
 ```{r}
 why_happy_list <- list(happy_country_vec, gdp_vec, generosity_vec)
-ggVennDiagram(why_happy_list, category.names = c("Country with Happy Score", "GDP Contirbution", "Generosity Contribution"))
+ggVennDiagram(why_happy_list, 
+              category.names = c("Happy Country", "GDP", "Generosity"), 
+              label_color = "black")+
+  ggplot2::scale_fill_gradient(low="navyblue",high = "yellow")
+```
+```{r}
+unhappy_country_vec <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy")%>%
+  pull(country_or_region)
+gdp_vec2 <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy" | economy_category == "insignificant")%>%
+  pull(country_or_region)
+generosity_vec2 <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy" | generosity_category == "insignificant")%>%
+  pull(country_or_region)
+family_vec2 <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy" | family_category == "insignificant")%>%
+  pull(country_or_region)
+health_vec2 <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy" | health_category == "insignificant")%>%
+  pull(country_or_region)
+freedom_vec2 <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy" | freedom_category == "insignificant")%>%
+  pull(country_or_region)
+trust_vec2 <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy" | trust_category == "insignificant")%>%
+  pull(country_or_region)
+```
+
+```{r}
+why_unhappy_list <- list(unhappy_country_vec, gdp_vec2, generosity_vec2)
+ggVennDiagram(why_unhappy_list, 
+              category.names = c("Unhappy Country", "GDP", "Generosity"), 
+              label_color = "black")+
+  ggplot2::scale_fill_gradient(low="navyblue",high = "yellow")
+```
+
+##Pie Charts
+```{r}
+happiness_pie <- complete_happiness_ave %>% 
+  group_by(country_or_region)%>%
+  summarise(economy_contribution_percentage = mean_gdp_contrib/mean_happiness_score,
+         family_contribution_percentage = mean_family_contrib/mean_happiness_score, 
+         health_contribution_percentage = mean_health_contrib/mean_happiness_score, 
+         freedom_contribution_percentage = mean_freedom_contrib/mean_happiness_score, 
+         generosity_contribution_percentage = mean_generosity_contrib/mean_happiness_score, 
+         trust_contribution_percentage = mean_trust_contrib/mean_happiness_score)%>%
+  pivot_longer(-country_or_region, 
+               names_to = "factor", 
+               values_to = "score_perc")
+```
+
+```{r}
+complete_happiness_ave%>%
+  arrange(desc(mean_happiness_score))%>%
+  head(n=5)%>%
+  pull(country_or_region)
+complete_happiness_ave%>%
+  arrange(mean_happiness_score)%>%
+  head(n=5)%>%
+  pull(country_or_region)
+```
+```{r}
+cats <- happiness_pie$factor
+cats <- str_replace(cats, c('economy_contribution_percentage'), replacement = 'GDP')
+cats <- str_replace(cats, c('family_contribution_percentage'), replacement = 'Family')
+cats <- str_replace(cats, c('health_contribution_percentage'), replacement = 'Life Expectancy')
+cats <- str_replace(cats, c('freedom_contribution_percentag'), replacement = 'Freedom')
+cats <- str_replace(cats, c('generosity_contribution_percentage'), replacement = 'Generosity')
+cats <- str_replace(cats, c('trust_contribution_percentage'), replacement = 'Government Trust')
+```
+
+```{r}
+happiness_pie2 <- happiness_pie %>%
+  mutate(labels = round(score_perc*100, digits = 2))
+happiness_pie2$factor = cats
+happy_pie1 <- happiness_pie2 %>% 
+  filter(country_or_region == "Denmark")%>%
+  select(country_or_region, labels, factor)
+happy_pie1_2 <- happy_pie1 %>% 
+  mutate(pie_prop = labels/sum(happy_pie1$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p1 <- ggplot(happy_pie1_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie2 <- happiness_pie2 %>% 
+  filter(country_or_region == "Norway")%>%
+  select(country_or_region, labels, factor)
+happy_pie2_2 <- happy_pie2 %>% 
+  mutate(pie_prop = labels/sum(happy_pie2$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p2 <- ggplot(happy_pie2_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie3 <- happiness_pie2 %>% 
+  filter(country_or_region == "Finland")%>%
+  select(country_or_region, labels, factor)
+happy_pie3_2 <- happy_pie3 %>% 
+  mutate(pie_prop = labels/sum(happy_pie3$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p3 <- ggplot(happy_pie3_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie4 <- happiness_pie2 %>% 
+  filter(country_or_region == "Switzerland")%>%
+  select(country_or_region, labels, factor)
+happy_pie4_2 <- happy_pie4 %>% 
+  mutate(pie_prop = labels/sum(happy_pie4$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p4 <- ggplot(happy_pie4_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie5 <- happiness_pie2 %>% 
+  filter(country_or_region == "Iceland")%>%
+  select(country_or_region, labels, factor)
+happy_pie5_2 <- happy_pie5 %>% 
+  mutate(pie_prop = labels/sum(happy_pie5$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p5 <- ggplot(happy_pie5_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+p1
+p2
+p3
+p4
+p5
 ```
 
 
