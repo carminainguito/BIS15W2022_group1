@@ -108,21 +108,6 @@ complete_happiness <- bind_rows(happiness_2015_join, happiness_2016_join, happin
 complete_happiness <- complete_happiness %>% 
   select(-region, -standard_error, -dystopia_residual, -lower_confidence_interval, -upper_confidence_interval, -whisker_high, -whisker_low) #remove unwanted columns
 ```
-## Exploring the Data 
-**Here, we're interested in understanding what kind of data we're going to be working with by utilizing several functions to observer its structure.**
-```{r}
-summary(complete_happiness)
-```
-
-```{r}
-glimpse(complete_happiness)
-```
-
-```{r}
-complete_happiness %>%
-  naniar::miss_var_summary()
-```
-
 
 ##Intereactive Map of Global Happiness Score
 ```{r}
