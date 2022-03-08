@@ -150,7 +150,6 @@ world_map@data <- world_map@data %>%
   mutate(NAME = str_replace(NAME, c('-'), replacement = 'and'))%>%
   mutate(NAME = str_replace(NAME, c(','), replacement = '_'))
 world_map@data <- left_join(world_map@data, happiness2, by="NAME")
-world_map@data
 ```
 
 ```{r}
