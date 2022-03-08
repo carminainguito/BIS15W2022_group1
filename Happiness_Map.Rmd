@@ -120,19 +120,21 @@ complete_happiness_ave <- complete_happiness %>%
 happiness <- complete_happiness_ave %>%
   select(country_or_region, mean_happiness_score, mean_gdp_contrib, mean_family_contrib, mean_health_contrib, mean_freedom_contrib, mean_trust_contrib, mean_generosity_contrib)%>%
   rename(NAME="country_or_region")
-happiness
 ```
 
 ```{r}
 happiness2 <- happiness %>%
   mutate(NAME = str_replace_all(NAME , "\\*|\\(|\\)", "")) %>% 
-  mutate(NAME = str_replace(NAME, c('&'), replacement = 'and'))
+  mutate(NAME = str_replace(NAME, c('&'), replacement = 'and'))%>%
+  mutate(NAME = str_replace(NAME, c('-'), replacement = 'and'))%>%
+  mutate(NAME = str_replace(NAME, c(','), replacement = '_'))
 renamed <- happiness2$NAME
 renamed <- str_replace(renamed, c('Libya'), replacement = 'Libyan Arab Jamahiriya')
 renamed <- str_replace(renamed, c('Venezuela Bolivarian Republic of'), replacement = 'Venezuela')
 renamed <- str_replace(renamed, c('South Sudan'), replacement = 'Sudan')
 renamed <- str_replace(renamed, c('Congo Brazzaville'), replacement = 'Congo')
 renamed <- str_replace(renamed, c('Congo Kinshasa'), replacement = 'Democratic Republic of the Congo')
+renamed <- str_replace(renamed, c('Tanzania'), replacement = 'United Republic of Tanzania')
 renamed <- str_replace(renamed, c('Vietnam'), replacement = 'Viet Nam')
 renamed <- str_replace(renamed, c('Syria'), replacement = 'Syrian Arab Republic')
 renamed <- str_replace(renamed, c('Iran'), replacement = 'Iran (Islamic Republic of)')
@@ -142,7 +144,13 @@ happiness2$NAME = renamed
 ```
 
 ```{r}
+world_map@data <- world_map@data %>%
+  mutate(NAME = str_replace_all(NAME , "\\*|\\(|\\)", "")) %>% 
+  mutate(NAME = str_replace(NAME, c('&'), replacement = 'and'))%>%
+  mutate(NAME = str_replace(NAME, c('-'), replacement = 'and'))%>%
+  mutate(NAME = str_replace(NAME, c(','), replacement = '_'))
 world_map@data <- left_join(world_map@data, happiness2, by="NAME")
+world_map@data
 ```
 
 ```{r}
@@ -152,7 +160,7 @@ world_map@data$mean_happiness_score <- as.numeric(as.character(world_map@data$me
 
 ```{r}
 mypalette <- colorNumeric( palette="viridis", domain=world_map@data$mean_happiness_score, na.color="transparent")
-mypalette(c(45,43))
+mypalette(c(4,5))
 ```
 
 ```{r}
@@ -163,8 +171,8 @@ m <- leaflet(world_map)%>%
 ```
 
 ```{r}
-mybins <- c(0,2,4,6,8,10)
-mypalette <- colorBin( palette="YlOrBr", domain=world_map@data$mean_happiness_score, na.color="transparent", bins=mybins)
+mybins <- c(0,1,2,3,4,5,6,7,8,9,10)
+mypalette <- colorBin( palette="viridis", domain=world_map@data$mean_happiness_score, na.color="transparent", bins=mybins)
 ```
 
 ```{r}
@@ -198,7 +206,7 @@ leaflet(world_map) %>%
       direction = "auto"
     )
   ) %>%
-  addLegend( pal=mypalette, values=~population, opacity=0.9, title = "Happiness Score", position = "bottomleft" )
+  addLegend( pal=mypalette, values=~mean_happiness_score, opacity=0.9, title = "Happiness Score", position = "bottomleft" )
 
 m  
 ```

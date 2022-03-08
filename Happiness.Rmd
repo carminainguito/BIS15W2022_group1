@@ -189,6 +189,38 @@ ggVennDiagram(why_happy_list,
               label_color = "black")+
   ggplot2::scale_fill_gradient(low="navyblue",high = "yellow")
 ```
+```{r}
+unhappy_country_vec <- happiness_venn %>%
+  filter(happiness_category == "unhappy" | happiness_category == "very unhappy")%>%
+  pull(country_or_region)
+gdp_vec2 <- happiness_venn %>%
+  filter(economy_category == "insignificant")%>%
+  pull(country_or_region)
+generosity_vec2 <- happiness_venn %>%
+  filter(generosity_category == "insignificant")%>%
+  pull(country_or_region)
+family_vec2 <- happiness_venn %>%
+  filter(family_category == "insignificant")%>%
+  pull(country_or_region)
+health_vec2 <- happiness_venn %>%
+  filter(health_category == "insignificant")%>%
+  pull(country_or_region)
+freedom_vec2 <- happiness_venn %>%
+  filter(freedom_category == "insignificant")%>%
+  pull(country_or_region)
+trust_vec2 <- happiness_venn %>%
+  filter(trust_category == "insignificant")%>%
+  pull(country_or_region)
+```
+
+```{r}
+why_unhappy_list <- list(unhappy_country_vec, gdp_vec2, generosity_vec2)
+ggVennDiagram(why_unhappy_list, 
+              category.names = c("Unhappy Country", "GDP", "Generosity"), 
+              label_color = "black")+
+  ggplot2::scale_fill_gradient(low="navyblue",high = "yellow")
+```
+
 ##Pie Charts
 ```{r}
 happiness_pie <- complete_happiness_ave %>% 
