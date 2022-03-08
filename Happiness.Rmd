@@ -361,5 +361,121 @@ p4
 p5
 ```
 
+```{r}
+happy_pie6 <- happiness_pie2 %>% 
+  filter(country_or_region == "Burundi")%>%
+  select(country_or_region, labels, factor)
+happy_pie6_2 <- happy_pie6 %>% 
+  mutate(pie_prop = labels/sum(happy_pie6$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
 
+```{r}
+p6 <- ggplot(happy_pie6_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie7 <- happiness_pie2 %>% 
+  filter(country_or_region == "Central African Republic")%>%
+  select(country_or_region, labels, factor)
+happy_pie7_2 <- happy_pie7 %>% 
+  mutate(pie_prop = labels/sum(happy_pie7$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p7 <- ggplot(happy_pie7_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie8 <- happiness_pie2 %>% 
+  filter(country_or_region == "Syria")%>%
+  select(country_or_region, labels, factor)
+happy_pie8_2 <- happy_pie8 %>% 
+  mutate(pie_prop = labels/sum(happy_pie8$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p8 <- ggplot(happy_pie8_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie9 <- happiness_pie2 %>% 
+  filter(country_or_region == "South Sudan")%>%
+  select(country_or_region, labels, factor)
+happy_pie9_2 <- happy_pie2 %>% 
+  mutate(pie_prop = labels/sum(happy_pie9$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p9 <- ggplot(happy_pie9_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+happy_pie10 <- happiness_pie2 %>% 
+  filter(country_or_region == "Rwanda")%>%
+  select(country_or_region, labels, factor)
+happy_pie10_2 <- happy_pie10 %>% 
+  mutate(pie_prop = labels/sum(happy_pie10$labels)*100) %>% 
+  mutate(y_pos = cumsum(pie_prop)-0.5*pie_prop)
+```
+
+```{r}
+p10 <- ggplot(happy_pie10_2, aes(x="", y = pie_prop, fill = factor))+
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start = 0) +
+  theme_minimal() + 
+  theme(legend.position= "right") +
+  guides(fill = guide_legend(title = "Factors"))+
+  geom_text(aes(y = pie_prop, label = percent(labels/100)), color = "black", size=3, angle = 2, position = position_stack(vjust = 0.5)) +
+  labs(x = "", y= "Proportions")+
+  scale_fill_brewer(palette="Set2")+
+  facet_wrap(~country_or_region)
+```
+
+```{r}
+p6
+p7
+p8
+p9
+p10
+```
 
