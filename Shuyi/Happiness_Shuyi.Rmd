@@ -11,12 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Load the libraries
 ```{r message=FALSE, warning=FALSE}
-library(leaflet)
-library(rgdal)
 library(ggplot2)
-library(maps)
-library(rworldmap)
-library(ggmap)
 library(tidyverse)
 library(RColorBrewer)
 library(paletteer)
@@ -25,7 +20,6 @@ library(here)
 library(ggthemes)
 library(shiny)
 library(shinydashboard)
-library(ggVennDiagram)
 ```
 
 ```{r}
